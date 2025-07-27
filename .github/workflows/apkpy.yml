@@ -39,7 +39,6 @@ jobs:
         mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
         quit
         EOF
-
     - name: Установка последних autotools
       run: |
         sudo apt-get remove -y autoconf automake libtool
