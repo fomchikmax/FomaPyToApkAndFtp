@@ -36,7 +36,7 @@ jobs:
         lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
           sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
         set sftp:auto-confirm yes
-        mirror --verbose --parallel=10 ./project/
+        mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
         quit
         EOF
 
