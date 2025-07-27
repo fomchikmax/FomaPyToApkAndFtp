@@ -40,32 +40,27 @@ jobs:
         quit
         EOF
 
-    - name: Первый запуск сборки (инициализация SDK)
-      working-directory: ./project
+    - name: Установка Android SDK
       run: |
-        # Запускаем сборку, игнорируя ошибку лицензий
-        buildozer android debug || true
-
-    - name: Фикс лицензий Android SDK
-      run: |
-        sleep 10
+        # Создаем директории
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk
         
-        # Создаем лицензии
-        mkdir -p "$HOME/.android/licenses"
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$HOME/.android/licenses/android-sdk-license"
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$HOME/.android/licenses/android-sdk-license"
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$HOME/.android/licenses/android-sdk-license"
-        echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$HOME/.android/licenses/android-sdk-preview-license"
+        # Скачиваем cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip commandlinetools-linux-*.zip -d $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+        mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
         
-        # Используем явный путь к sdkmanager
-        SDKMANAGER_PATH="$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager"
+        # Настраиваем переменные окружения
+        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
         
-        # Автоматическое подтверждение через shell
-        yes | $SDKMANAGER_PATH --licenses > /dev/null || true
-
-    #- name: Явная установка Build-Tools
-      #run: |
-        #$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;36.0.0"
+        # Принимаем лицензии
+        mkdir -p $HOME/.android
+        touch $HOME/.android/repositories.cfg
+        yes | sdkmanager --licenses
+        
+        # Устанавливаем необходимые компоненты
+        sdkmanager "platform-tools" "platforms;android-21" "build-tools;36.0.0"
 
     - name: Сборка APK
       working-directory: ./project
