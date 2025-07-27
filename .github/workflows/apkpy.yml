@@ -16,10 +16,6 @@ on:
       sftp_pass:
         description: 'SFTP Password'
         required: true
-      remote_dir:
-        description: 'Директория на сервере (например /projects)'
-        required: true
-        default: '/'
 
 jobs:
   build:
@@ -34,21 +30,30 @@ jobs:
         pip install --upgrade pip
         pip install cython virtualenv buildozer
 
-    - name: Скачивание ВСЕГО через LFTP
+    - name: Скачивание проекта
       run: |
         mkdir -p project
         lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
           sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
         set sftp:auto-confirm yes
-        mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
+        mirror --verbose --parallel=10 ./project/
         quit
         EOF
 
-    - name: Проверка скачанного
+    - name: Фикс лицензий Android SDK
       run: |
-        echo "Содержимое проекта:"
-        ls -laR ./project
-        echo "Если пусто - ЕБАННЫЙ ВРОТ"
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        
+        # ЕБАНЫЕ ЛИЦЕНЗИИ GOOGLE
+        mkdir -p "$HOME/.android/licenses"
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$HOME/.android/licenses/android-sdk-license"
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$HOME/.android/licenses/android-sdk-license"
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$HOME/.android/licenses/android-sdk-license"
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$HOME/.android/licenses/android-sdk-preview-license"
+        
+        # АВТОМАТИЧЕСКОЕ ПОДТВЕРЖДЕНИЕ ВСЕХ ЛИЦЕНЗИЙ
+        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
 
     - name: Сборка APK
       working-directory: ./project
@@ -60,7 +65,6 @@ jobs:
         lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
           sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
         set sftp:auto-confirm yes
-        mkdir -p "${{ github.event.inputs.remote_dir }}"
-        mirror --reverse --verbose --parallel=10 ./project/bin/ "${{ github.event.inputs.remote_dir }}/"
+        put ./project/bin/*.apk
         quit
         EOF
