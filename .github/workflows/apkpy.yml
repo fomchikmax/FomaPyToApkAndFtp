@@ -34,6 +34,7 @@ jobs:
     - name: Скачивание проекта
       run: |
         mkdir -p project
+        rm -rf project/*
         lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
           sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
         set sftp:auto-confirm yes
