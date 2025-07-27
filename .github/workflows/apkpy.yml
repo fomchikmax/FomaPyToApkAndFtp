@@ -1,21 +1,25 @@
-name: Build APK
+name: Build APK via SFTP
 
 on:
   workflow_dispatch:
     inputs:
-      ftp_host:
-        description: 'FTP Host (IP или адрес)'
+      sftp_host:
+        description: 'SFTP Host (IP или домен)'
         required: true
-      ftp_port:
-        description: 'FTP Port'
+      sftp_port:
+        description: 'SFTP Port (обычно 22)'
         required: true
-        default: '21'
-      ftp_user:
-        description: 'FTP Username'
+        default: '22'
+      sftp_user:
+        description: 'SFTP Username'
         required: true
-      ftp_pass:
-        description: 'FTP Password'
+      sftp_pass:
+        description: 'SFTP Password'
         required: true
+      remote_path:
+        description: 'Путь к файлам на сервере (напр. /home/user/project)'
+        required: true
+        default: '/'
 
 jobs:
   build:
@@ -26,30 +30,28 @@ jobs:
     - name: Установка зависимостей
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config sshpass
         pip install --upgrade pip
         pip install cython virtualenv buildozer
 
-    - name: Подготовка проекта
+    - name: Загрузка файлов с SFTP
       run: |
         mkdir -p project
-        cd project
-        echo "machine ${{ github.event.inputs.ftp_host }}" > .netrc
-        echo "login ${{ github.event.inputs.ftp_user }}" >> .netrc
-        echo "password ${{ github.event.inputs.ftp_pass }}" >> .netrc
-        chmod 600 .netrc
-        curl -u "${{ github.event.inputs.ftp_user }}:${{ github.event.inputs.ftp_pass }}" \
-          "ftp://${{ github.event.inputs.ftp_host }}:${{ github.event.inputs.ftp_port }}/main.py" -o main.py
-        curl -u "${{ github.event.inputs.ftp_user }}:${{ github.event.inputs.ftp_pass }}" \
-          "ftp://${{ github.event.inputs.ftp_host }}:${{ github.event.inputs.ftp_port }}/buildozer.spec" -o buildozer.spec
+        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
+          scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.remote_path }}/main.py ./project/
+        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
+          scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.remote_path }}/buildozer.spec ./project/
 
     - name: Сборка APK
       working-directory: ./project
       run: |
         buildozer android debug
 
-    - name: Отправка APK на FTP
+    - name: Отправка APK на SFTP
       working-directory: ./project/bin
       run: |
-        find . -name '*.apk' -exec curl -u "${{ github.event.inputs.ftp_user }}:${{ github.event.inputs.ftp_pass }}" \
-          --ftp-create-dirs -T {} "ftp://${{ github.event.inputs.ftp_host }}:${{ github.event.inputs.ftp_port }}/{}" \;
+        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
+          scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
+          *.apk ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.remote_path }}/
