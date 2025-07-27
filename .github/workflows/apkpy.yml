@@ -40,10 +40,16 @@ jobs:
         quit
         EOF
 
+    - name: Первый запуск сборки (инициализация SDK)
+      working-directory: ./project
+      run: |
+        # Запускаем сборку, игнорируя ошибку лицензий
+        buildozer android debug || true
+
     - name: Фикс лицензий Android SDK
       run: |
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
+        # Ждем пока SDK установится
+        sleep 10
         
         # ЕБАНЫЕ ЛИЦЕНЗИИ GOOGLE
         mkdir -p "$HOME/.android/licenses"
@@ -52,8 +58,17 @@ jobs:
         echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$HOME/.android/licenses/android-sdk-license"
         echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$HOME/.android/licenses/android-sdk-preview-license"
         
-        # АВТОМАТИЧЕСКОЕ ПОДТВЕРЖДЕНИЕ ВСЕХ ЛИЦЕНЗИЙ
-        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
+        # Автоматическое подтверждение через expect
+        sudo apt-get install -y expect
+        echo '#!/usr/bin/expect -f
+        spawn $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        expect {
+            "y/N" { exp_send "y\r"; exp_continue }
+            eof
+        }
+        ' > accept_licenses.exp
+        chmod +x accept_licenses.exp
+        ./accept_licenses.exp
 
     - name: Сборка APK
       working-directory: ./project
