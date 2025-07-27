@@ -40,6 +40,32 @@ jobs:
         quit
         EOF
 
+    - name: Установка Android SDK
+      run: |
+        # Создаем директории
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk
+        
+        # Скачиваем cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip commandlinetools-linux-*.zip -d $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+        mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+        
+        # Настраиваем переменные окружения
+        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        
+        # Принимаем лицензии
+        mkdir -p $HOME/.android
+        touch $HOME/.android/repositories.cfg
+        yes | sdkmanager --licenses
+        
+        # Устанавливаем необходимые компоненты
+        sdkmanager "platform-tools" "platforms;android-21" "build-tools;36.0.0"
+
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/tools/bin
+        ln -s $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+
+
     - name: Сборка APK
       working-directory: ./project
       run: |
