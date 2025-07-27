@@ -26,7 +26,7 @@ jobs:
     - name: Установка зависимостей
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config lftp libtool-bin
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config lftp
         pip install --upgrade pip
         pip install cython virtualenv buildozer
 
@@ -39,6 +39,40 @@ jobs:
         mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
         quit
         EOF
+
+   - name: Установка последних autotools (если нужно)
+     if: ${{ always() }}  # Всегда выполняем, даже если предыдущие шаги с предупреждениями
+     run: |
+       sudo apt-get remove -y autoconf automake libtool
+       sudo apt-get install -y wget gcc make perl
+    # Устанавливаем autoconf
+       wget https://ftp.gnu.org/gnu/autoconf/autoconf-2.72.tar.gz
+       tar xzf autoconf-2.72.tar.gz
+       cd autoconf-2.72
+       ./configure
+       make
+       sudo make install
+       cd ..
+    # Устанавливаем automake
+       wget https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz
+       tar xzf automake-1.16.5.tar.gz
+       cd automake-1.16.5
+       ./configure
+       make
+       sudo make install
+       cd ..
+    # Устанавливаем libtool
+       wget https://ftp.gnu.org/gnu/libtool/libtool-2.4.7.tar.gz
+       tar xzf libtool-2.4.7.tar.gz
+       cd libtool-2.4.7
+       ./configure
+       make
+      sudo make install
+      cd ..
+    # Проверяем версии
+      autoconf --version
+      automake --version
+      libtool --version
 
     - name: Установка Android SDK
       run: |
