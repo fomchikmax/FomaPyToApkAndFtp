@@ -23,12 +23,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Установка зависимостей
-      run: |
-        sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config sshpass
-        pip install --upgrade pip
-        pip install cython virtualenv buildozer
 
     - name: Загрузка файлов с SFTP
       run: |
@@ -41,6 +35,13 @@ jobs:
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
           ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:buildozer.spec ./project/
+
+    - name: Установка зависимостей
+      run: |
+        sudo apt update
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config sshpass
+        pip install --upgrade pip
+        pip install cython virtualenv buildozer
 
     - name: Сборка APK
       working-directory: ./project
