@@ -1,0 +1,55 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      ftp_host:
+        description: 'FTP Host (IP или адрес)'
+        required: true
+      ftp_port:
+        description: 'FTP Port'
+        required: true
+        default: '21'
+      ftp_user:
+        description: 'FTP Username'
+        required: true
+      ftp_pass:
+        description: 'FTP Password'
+        required: true
+
+jobs:
+  build:
+    name: Build and upload APK
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Установка зависимостей
+      run: |
+        sudo apt update
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config
+        pip install --upgrade pip
+        pip install cython virtualenv buildozer
+
+    - name: Подготовка проекта
+      run: |
+        mkdir -p project
+        cd project
+        echo "machine ${{ github.event.inputs.ftp_host }}" > .netrc
+        echo "login ${{ github.event.inputs.ftp_user }}" >> .netrc
+        echo "password ${{ github.event.inputs.ftp_pass }}" >> .netrc
+        chmod 600 .netrc
+        curl -u "${{ github.event.inputs.ftp_user }}:${{ github.event.inputs.ftp_pass }}" \
+          "ftp://${{ github.event.inputs.ftp_host }}:${{ github.event.inputs.ftp_port }}/main.py" -o main.py
+        curl -u "${{ github.event.inputs.ftp_user }}:${{ github.event.inputs.ftp_pass }}" \
+          "ftp://${{ github.event.inputs.ftp_host }}:${{ github.event.inputs.ftp_port }}/buildozer.spec" -o buildozer.spec
+
+    - name: Сборка APK
+      working-directory: ./project
+      run: |
+        buildozer android debug
+
+    - name: Отправка APK на FTP
+      working-directory: ./project/bin
+      run: |
+        find . -name '*.apk' -exec curl -u "${{ github.event.inputs.ftp_user }}:${{ github.event.inputs.ftp_pass }}" \
+          --ftp-create-dirs -T {} "ftp://${{ github.event.inputs.ftp_host }}:${{ github.event.inputs.ftp_port }}/{}" \;
