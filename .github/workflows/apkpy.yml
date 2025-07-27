@@ -63,9 +63,9 @@ jobs:
         # Автоматическое подтверждение через shell
         yes | $SDKMANAGER_PATH --licenses > /dev/null || true
 
-    - name: Явная установка Build-Tools
-      run: |
-        $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;36.0.0"
+    #- name: Явная установка Build-Tools
+      #run: |
+        #$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;36.0.0"
 
     - name: Сборка APK
       working-directory: ./project
