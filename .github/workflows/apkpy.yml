@@ -62,6 +62,9 @@ jobs:
         # Устанавливаем необходимые компоненты
         sdkmanager "platform-tools" "platforms;android-21" "build-tools;36.0.0"
 
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/tools/bin
+        ln -s $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+
     - name: Сборка APK
       working-directory: ./project
       run: |
