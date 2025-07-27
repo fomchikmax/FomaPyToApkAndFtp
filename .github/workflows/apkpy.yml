@@ -40,8 +40,7 @@ jobs:
         quit
         EOF
 
-    - name: Установка последних autotools (если нужно)
-      if: ${{ always() }}  # Всегда выполняем, даже если предыдущие шаги с предупреждениями
+    - name: Установка последних autotools
       run: |
         sudo apt-get remove -y autoconf automake libtool
         sudo apt-get install -y wget gcc make perl
