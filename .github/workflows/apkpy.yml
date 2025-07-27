@@ -19,9 +19,9 @@ on:
         required: true
 
 jobs:
-  name: Build
   build:
     runs-on: ubuntu-24.04
+
     steps:
     - name: Установить Python 3.8
         uses: actions/setup-python@v5
