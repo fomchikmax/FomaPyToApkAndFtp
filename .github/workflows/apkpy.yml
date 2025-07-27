@@ -20,10 +20,13 @@ on:
 
 jobs:
   build:
-    name: Build and upload APK
     runs-on: ubuntu-24.04
-
     steps:
+    - name: Установить Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+
     - name: Установка зависимостей
       run: |
         sudo apt update
