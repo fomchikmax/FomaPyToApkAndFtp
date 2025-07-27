@@ -33,15 +33,14 @@ jobs:
     - name: Загрузка файлов с SFTP
       run: |
         mkdir -p project
-        # Качаем main.py из корня
+        # Корректный путь к файлам в домашней директории
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:/main.py ./project/
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:main.py ./project/
         
-        # Качаем buildozer.spec из корня
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:/buildozer.spec ./project/
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:buildozer.spec ./project/
 
     - name: Сборка APK
       working-directory: ./project
@@ -51,7 +50,7 @@ jobs:
     - name: Отправка APK на SFTP
       working-directory: ./project/bin
       run: |
-        # Отправляем все APK файлы в корень сервера
+        # Отправка в домашнюю директорию
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          *.apk ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:/
+          *.apk ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:
