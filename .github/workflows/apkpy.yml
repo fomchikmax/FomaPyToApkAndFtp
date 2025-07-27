@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       sftp_host:
-        description: 'SFTP Host (IP или домен)'
+        description: 'SFTP Host'
         required: true
+        default: 'bth03-ghe.iona.sh'
       sftp_port:
         description: 'SFTP Port'
         required: true
-        default: '22'
+        default: '2022'
       sftp_user:
         description: 'SFTP Username'
         required: true
