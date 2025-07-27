@@ -7,7 +7,7 @@ on:
         description: 'SFTP Host (IP или домен)'
         required: true
       sftp_port:
-        description: 'SFTP Port (обычно 22)'
+        description: 'SFTP Port'
         required: true
         default: '22'
       sftp_user:
@@ -23,35 +23,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-    - name: Загрузка файлов с SFTP
-      run: |
-        mkdir -p project
-        # Корректный путь к файлам в домашней директории
-        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
-          scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:main.py ./project/
-        
-        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
-          scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:buildozer.spec ./project/
-
     - name: Установка зависимостей
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config sshpass
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config sshpass rsync
         pip install --upgrade pip
         pip install cython virtualenv buildozer
+
+    - name: Загрузка ВСЕГО ПРОЕКТА С СЕРВЕРА
+      run: |
+        mkdir -p project
+        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -p ${{ github.event.inputs.sftp_port }}" \
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}: ./project/
+
+    - name: Проверка что все скачалось
+      run: |
+        echo "Содержимое проекта:"
+        ls -laR ./project
+        echo "Если тут нет файлов - ПИЗДЕЦ"
 
     - name: Сборка APK
       working-directory: ./project
       run: |
         buildozer android debug
 
-    - name: Отправка APK на SFTP
-      working-directory: ./project/bin
+    - name: Отправка APK на сервер
       run: |
-        # Отправка в домашнюю директорию
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
-          scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          *.apk ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -p ${{ github.event.inputs.sftp_port }}" \
+          ./project/bin/*.apk \
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:/
