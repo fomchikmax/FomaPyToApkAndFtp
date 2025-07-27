@@ -1,4 +1,4 @@
-name: Build APK via SFTP
+name: Build APK via Pure SFTP
 
 on:
   workflow_dispatch:
@@ -16,6 +16,10 @@ on:
       sftp_pass:
         description: 'SFTP Password'
         required: true
+      remote_dir:
+        description: 'Директория на сервере (например /projects)'
+        required: true
+        default: '/'
 
 jobs:
   build:
@@ -26,22 +30,25 @@ jobs:
     - name: Установка зависимостей
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config sshpass rsync
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config lftp
         pip install --upgrade pip
         pip install cython virtualenv buildozer
 
-    - name: Загрузка ВСЕГО ПРОЕКТА С СЕРВЕРА
+    - name: Скачивание ВСЕГО через LFTP
       run: |
         mkdir -p project
-        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no -p ${{ github.event.inputs.sftp_port }}" \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}: ./project/
+        lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
+          sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
+        set sftp:auto-confirm yes
+        mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
+        quit
+        EOF
 
-    - name: Проверка что все скачалось
+    - name: Проверка скачанного
       run: |
         echo "Содержимое проекта:"
         ls -laR ./project
-        echo "Если тут нет файлов - ПИЗДЕЦ"
+        echo "Если пусто - ЕБАННЫЙ ВРОТ"
 
     - name: Сборка APK
       working-directory: ./project
@@ -50,7 +57,10 @@ jobs:
 
     - name: Отправка APK на сервер
       run: |
-        sshpass -p "${{ github.event.inputs.sftp_pass }}" \
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no -p ${{ github.event.inputs.sftp_port }}" \
-          ./project/bin/*.apk \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:/
+        lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
+          sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
+        set sftp:auto-confirm yes
+        mkdir -p "${{ github.event.inputs.remote_dir }}"
+        mirror --reverse --verbose --parallel=10 ./project/bin/ "${{ github.event.inputs.remote_dir }}/"
+        quit
+        EOF
