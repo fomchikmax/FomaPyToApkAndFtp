@@ -27,11 +27,9 @@ jobs:
     - name: Установка зависимостей
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config lftp
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config lftp libtool autoconf automake
         pip install --upgrade pip
-        pip install cython virtualenv buildozer
-        pip install --upgrade python-for-android
-        sudo apt install libtool autoconf automake pkg-config
+        pip install --upgrade cython virtualenv buildozer python-for-android
 
     - name: Скачивание проекта
       run: |
