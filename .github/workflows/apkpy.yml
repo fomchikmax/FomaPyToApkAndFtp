@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       sftp_host:
-        description: 'SFTP Host (IP или домен)'
+        description: 'SFTP Host'
         required: true
       sftp_port:
-        description: 'SFTP Port (обычно 22)'
+        description: 'SFTP Port'
         required: true
         default: '22'
       sftp_user:
@@ -33,14 +33,14 @@ jobs:
     - name: Загрузка файлов с SFTP
       run: |
         mkdir -p project
-        # Корректный путь к файлам в домашней директории
+        # Скачиваем из /home/container/
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:main.py ./project/
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:"/home/container/main.py" ./project/
         
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:buildozer.spec ./project/
+          ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:"/home/container/buildozer.spec" ./project/
 
     - name: Сборка APK
       working-directory: ./project
@@ -50,7 +50,7 @@ jobs:
     - name: Отправка APK на SFTP
       working-directory: ./project/bin
       run: |
-        # Отправка в домашнюю директорию
+        # Отправляем в /home/container/
         sshpass -p "${{ github.event.inputs.sftp_pass }}" \
           scp -o StrictHostKeyChecking=no -P ${{ github.event.inputs.sftp_port }} \
-          *.apk ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:
+          *.apk ${{ github.event.inputs.sftp_user }}@${{ github.event.inputs.sftp_host }}:"/home/container/"
