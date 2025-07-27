@@ -48,27 +48,24 @@ jobs:
 
     - name: Фикс лицензий Android SDK
       run: |
-        # Ждем пока SDK установится
         sleep 10
         
-        # ЕБАНЫЕ ЛИЦЕНЗИИ GOOGLE
+        # Создаем лицензии
         mkdir -p "$HOME/.android/licenses"
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$HOME/.android/licenses/android-sdk-license"
         echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$HOME/.android/licenses/android-sdk-license"
         echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$HOME/.android/licenses/android-sdk-license"
         echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$HOME/.android/licenses/android-sdk-preview-license"
         
-        # Автоматическое подтверждение через expect
-        sudo apt-get install -y expect
-        echo '#!/usr/bin/expect -f
-        spawn $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-        expect {
-            "y/N" { exp_send "y\r"; exp_continue }
-            eof
-        }
-        ' > accept_licenses.exp
-        chmod +x accept_licenses.exp
-        ./accept_licenses.exp
+        # Используем явный путь к sdkmanager
+        SDKMANAGER_PATH="$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager"
+        
+        # Автоматическое подтверждение через shell
+        yes | $SDKMANAGER_PATH --licenses > /dev/null || true
+
+    - name: Явная установка Build-Tools
+      run: |
+        $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;36.0.0"
 
     - name: Сборка APK
       working-directory: ./project
