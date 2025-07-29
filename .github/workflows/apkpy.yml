@@ -33,7 +33,8 @@ jobs:
         sudo apt update
         sudo apt install -y git zip unzip openjdk-17-jdk python3-pip libffi-dev libssl-dev pkg-config lftp libtool autoconf automake
         pip install --upgrade pip
-        pip install --upgrade cython virtualenv buildozer python-for-android
+        pip install --upgrade cython virtualenv buildozer
+        pip install "python-for-android==2023.09.03"
 
     - name: Скачивание проекта
       run: |
