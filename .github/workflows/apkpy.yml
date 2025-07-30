@@ -37,17 +37,6 @@ jobs:
         pip install setuptools==65.5.0
         pip install "python-for-android==2023.5.21"
 
-    - name: Скачивание проекта
-      run: |
-        mkdir -p project
-        rm -rf project/*
-        lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
-          sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
-        set sftp:auto-confirm yes
-        mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
-        quit
-        EOF
-
     - name: Установка Android SDK
       run: |
         # Создаем директории
@@ -77,6 +66,22 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential gcc g++ libtool m4 automake autoconf
+
+    - name: Очистка прошлых билдов
+      working-directory: ./project
+      run: |
+        buildozer android clean || true
+
+    - name: Скачивание проекта
+      run: |
+        mkdir -p project
+        rm -rf project/*
+        lftp -u "${{ github.event.inputs.sftp_user }},${{ github.event.inputs.sftp_pass }}" \
+          sftp://${{ github.event.inputs.sftp_host }}:${{ github.event.inputs.sftp_port }} <<EOF
+        set sftp:auto-confirm yes
+        mirror --verbose --parallel=10 "${{ github.event.inputs.remote_dir }}" ./project/
+        quit
+        EOF
 
     - name: Сборка APK
       working-directory: ./project
